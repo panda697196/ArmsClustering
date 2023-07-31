@@ -36,14 +36,18 @@ folder_path = 'D:/Study/NotCleaned/NotCleaned/AbeTomoaki/'
 #D:\Dev\AbeTomoaki D:/Study/NotCleaned/NotCleaned/AbeTomoaki/
 # 获取文件夹中所有的bvh文件名
 file_names = glob.glob(folder_path + '*.bvh')
-# 创建一个空的列表，用来存放所有文件的特征向量
+# 创建一个空的列表，用来存放所有文件的特征向量和感情标签
 feature_vectors = []
+emotion_labels = []
 # 遍历所有文件名
 for file_name in file_names:
     # 调用函数，读取手臂部分数据，并返回特征向量
     feature_vector = read_arm_data(file_name)
     # 将特征向量添加到列表中
     feature_vectors.append(feature_vector)
+    # 提取文件名中的感情标签，并添加到列表中
+    emotion_label = file_name.split('_')[2]
+    emotion_labels.append(emotion_label)
 
 # 将列表中的所有特征向量拼接成一个二维矩阵
 feature_matrix = np.array(feature_vectors)
@@ -65,17 +69,35 @@ cluster_label = kmeans.labels_
 # 打印聚类结果和标签
 print('Cluster result:', cluster_result)
 print('Cluster labels:', kmeans.labels_)
+
+# 创建一个字典，用来存放每个聚类中的文件名和感情标签
 cluster_files = {}
+# 遍历所有的聚类标签和文件名
 for i, label in enumerate(cluster_label):
+    # 如果字典中没有这个标签的键，就创建一个空的列表作为值
     if label not in cluster_files:
         cluster_files[label] = []
-    cluster_files[label].append(file_names[i])
+    # 将文件名和感情标签作为一个元组，添加到对应的列表中
+    cluster_files[label].append((file_names[i], emotion_labels[i]))
 
-# Print the files in each cluster
+# 打印每个聚类中的文件个数，以及感情种类和个数
 for cluster, files in cluster_files.items():
-    print(f"Files in Cluster {cluster}:")
-    for file in files:
-        print(file)
+    print(f"Cluster {cluster}:")
+    print(f"Number of files: {len(files)}")
+    # 创建一个空的字典，用来存放每个感情的个数
+    emotion_count = {}
+    # 遍历每个文件的感情标签
+    for file, emotion in files:
+        # 如果字典中没有这个感情的键，就初始化为0
+        if emotion not in emotion_count:
+            emotion_count[emotion] = 0
+        # 将这个感情的计数加一
+        emotion_count[emotion] += 1
+    # 打印每个感情的个数
+    for emotion, count in emotion_count.items():
+        print(f"{emotion}: {count}")
+    # 打印空行，方便阅读
+    print()
 
 # 导入matplotlib库
 import matplotlib.pyplot as plt
@@ -88,4 +110,3 @@ plt.xlabel('Sample index')
 plt.ylabel('Feature value')
 # 显示图形
 plt.show()
-
