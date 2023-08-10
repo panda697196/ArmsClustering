@@ -1,11 +1,14 @@
 import numpy as np
 import pandas as pd
-from sklearn.cluster import KMeans # 选择k-means算法，你也可以换成其他的
-import glob # 用来读取文件夹中的所有文件
+import glob
 from sklearn.preprocessing import StandardScaler
-from scipy.spatial.distance import cdist
 from fastdtw import fastdtw
-
+from tqdm import tqdm
+from scipy.cluster.hierarchy import linkage, to_tree, dendrogram
+from sklearn.cluster import AgglomerativeClustering  # 修改导入语句
+from sklearn.decomposition import PCA
+import matplotlib.pyplot as plt
+import re
 # 定义读取bvh文件中手臂部分数据的函数
 def read_arm_data(filename):
     # 打开文件
@@ -26,87 +29,90 @@ def read_arm_data(filename):
         data_lines = lines[frame_time_index + 1:]
         # 将数据转换为numpy数组
         data = np.array([list(map(float, line.split())) for line in data_lines])
-        # 选择手臂部分的数据，这里假设手臂部分有6个特征，你可以根据你的数据格式进行修改
+        # 选择手臂部分的数据，这里假设手臂部分有6个特征，您可以根据您的数据格式进行修改
         arm_data = data[:, 27:27 + 24]
-        # 返回手臂部分数据的平均值，作为这个文件的特征向量
-        return arm_data.mean(axis=0) # 修改：返回平均值，而不是所有特征
+        # 返回手臂部分数据作为这个文件的特征向量
+        return arm_data
 
-# 定义文件夹路径，这里假设所有的bvh文件都在同一个文件夹中，你可以根据你的实际情况进行修改
-folder_path = 'D:/Study/NotCleaned/NotCleaned/AbeTomoaki/'
-#D:\Dev\AbeTomoaki D:/Study/NotCleaned/NotCleaned/AbeTomoaki/
+ #定义文件夹路径，这里假设所有的bvh文件都在同一个文件夹中，您可以根据您的实际情况进行修改
+folder_path = 'D:\Dev\AbeTomoaki/'
+#D:\Dev\AbeTomoaki
 # 获取文件夹中所有的bvh文件名
 file_names = glob.glob(folder_path + '*.bvh')
-# 创建一个空的列表，用来存放所有文件的特征向量和感情标签
+# 创建一个空的列表，用来存放所有文件的特征向量
 feature_vectors = []
-emotion_labels = []
 # 遍历所有文件名
 for file_name in file_names:
     # 调用函数，读取手臂部分数据，并返回特征向量
     feature_vector = read_arm_data(file_name)
     # 将特征向量添加到列表中
     feature_vectors.append(feature_vector)
-    # 提取文件名中的感情标签，并添加到列表中
-    emotion_label = file_name.split('_')[2]
-    emotion_labels.append(emotion_label)
 
-# 将列表中的所有特征向量拼接成一个二维矩阵
-feature_matrix = np.array(feature_vectors)
+# 计算所有特征向量之间的DTW距离矩阵
+dtw_distances = np.zeros((len(feature_vectors), len(feature_vectors)))
+for i in range(len(feature_vectors)):
+    for j in range(len(feature_vectors)):
+        dtw_distances[i, j], _ = fastdtw(feature_vectors[i], feature_vectors[j])
 
-# 使用StandardScaler对特征矩阵进行标准化
+# 使用StandardScaler对DTW距离矩阵进行标准化
 scaler = StandardScaler()
-feature_matrix_scaled = scaler.fit_transform(feature_matrix)
+dtw_distances_scaled = scaler.fit_transform(dtw_distances)
 
-# 打印标准化后的特征矩阵
-print('Scaled feature matrix:')
-print(feature_matrix_scaled)
+# 使用层次聚类方法进行聚类
+# linkage函数计算距离矩阵的层次聚类，'ward'代表使用ward方法进行聚类
+Z = linkage(dtw_distances_scaled, method='ward')
 
-# 创建一个k-means聚类器对象，假设你想将动作分为4类，你可以根据你的实际情况进行修改
-kmeans = KMeans(n_clusters=4)
-# 对标准化后的特征矩阵进行聚类，并获取聚类结果和标签
-cluster_result = kmeans.fit_predict(feature_matrix_scaled)
-cluster_label = kmeans.labels_
+# 使用AgglomerativeClustering进行层次聚类，不需要指定聚类簇的数量
+agg_clustering = AgglomerativeClustering(distance_threshold=0, n_clusters=None, linkage='ward')
+agg_clustering.fit(dtw_distances_scaled)
 
-# 打印聚类结果和标签
-print('Cluster result:', cluster_result)
-print('Cluster labels:', kmeans.labels_)
+# 获取聚类结果
+cluster_label = agg_clustering.labels_
 
-# 创建一个字典，用来存放每个聚类中的文件名和感情标签
+# 将聚类结果按照不同的簇进行存储
 cluster_files = {}
-# 遍历所有的聚类标签和文件名
 for i, label in enumerate(cluster_label):
-    # 如果字典中没有这个标签的键，就创建一个空的列表作为值
     if label not in cluster_files:
         cluster_files[label] = []
-    # 将文件名和感情标签作为一个元组，添加到对应的列表中
-    cluster_files[label].append((file_names[i], emotion_labels[i]))
+    cluster_files[label].append(file_names[i])
 
-# 打印每个聚类中的文件个数，以及感情种类和个数
+# 统计每个聚类簇中不同感情的数量
+emotion_counts = {}
 for cluster, files in cluster_files.items():
+    emotions = [re.search(r'_(\w+)_\d', file).group(1) for file in files]  # Extract emotion using regex
+    emotion_counts[cluster] = dict(pd.Series(emotions).value_counts())
+
+# 打印聚类结果和感情数量统计
+for cluster, emotion_count in emotion_counts.items():
     print(f"Cluster {cluster}:")
-    print(f"Number of files: {len(files)}")
-    # 创建一个空的字典，用来存放每个感情的个数
-    emotion_count = {}
-    # 遍历每个文件的感情标签
-    for file, emotion in files:
-        # 如果字典中没有这个感情的键，就初始化为0
-        if emotion not in emotion_count:
-            emotion_count[emotion] = 0
-        # 将这个感情的计数加一
-        emotion_count[emotion] += 1
-    # 打印每个感情的个数
     for emotion, count in emotion_count.items():
-        print(f"{emotion}: {count}")
-    # 打印空行，方便阅读
-    print()
+        print(f"    {emotion}: {count}")
 
-# 导入matplotlib库
-import matplotlib.pyplot as plt
-# 绘制散点图，横轴为样本索引，纵轴为第一个特征值，颜色为聚类标签
-plt.scatter(range(len(feature_matrix[:, 0])), feature_matrix[:, 0], c=cluster_result[:len(feature_matrix[:, 0])]) # 修改：让颜色参数c和横轴或纵轴长度
+# 降维到二维空间
+pca = PCA(n_components=2)
+dtw_distances_pca = pca.fit_transform(dtw_distances_scaled)
 
-# 添加标题和坐标轴标签
-plt.title('Clustering result')
+# 绘制聚类图
+plt.figure(figsize=(10, 8))
+for i, label in enumerate(cluster_label):
+    plt.scatter(dtw_distances_pca[i, 0], dtw_distances_pca[i, 1], color=plt.cm.Set1(label))
+plt.title('Hierarchical Clustering in 2D')
+plt.xlabel('PCA Component 1')
+plt.ylabel('PCA Component 2')
+plt.show()
+
+# 绘制层次聚类树状图（长条形）
+plt.figure(figsize=(10, 6))
+dendrogram(Z, labels=file_names, orientation='top')
+plt.title('Hierarchical Clustering Dendrogram')
 plt.xlabel('Sample index')
-plt.ylabel('Feature value')
-# 显示图形
+plt.ylabel('Distance')
+plt.show()
+
+# 绘制不同聚类簇的感情数量统计图
+plt.figure(figsize=(12, 6))
+plt.bar(emotion_counts.keys(), [sum(count.values()) for count in emotion_counts.values()])
+plt.xlabel('Cluster')
+plt.ylabel('Total Count')
+plt.title('Emotion Counts in Each Cluster')
 plt.show()

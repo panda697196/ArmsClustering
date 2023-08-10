@@ -1,10 +1,12 @@
 import numpy as np
 import pandas as pd
-from sklearn.cluster import KMeans
 import glob
 from sklearn.preprocessing import StandardScaler
 from fastdtw import fastdtw
 from tqdm import tqdm
+from scipy.cluster.hierarchy import dendrogram, linkage, fcluster, to_tree
+import matplotlib.pyplot as plt
+
 # 定义读取bvh文件中手臂部分数据的函数
 def read_arm_data(filename):
     # 打开文件
@@ -30,9 +32,10 @@ def read_arm_data(filename):
         # 返回手臂部分数据作为这个文件的特征向量
         return arm_data
 
- #定义文件夹路径，这里假设所有的bvh文件都在同一个文件夹中，您可以根据您的实际情况进行修改
+
+# 定义文件夹路径，这里假设所有的bvh文件都在同一个文件夹中，您可以根据您的实际情况进行修改
 folder_path = 'D:\Dev\AbeTomoaki/'
-#D:\Dev\AbeTomoaki
+# D:\Dev\AbeTomoaki
 # 获取文件夹中所有的bvh文件名
 file_names = glob.glob(folder_path + '*.bvh')
 # 创建一个空的列表，用来存放所有文件的特征向量
@@ -54,56 +57,76 @@ for i in range(len(feature_vectors)):
 scaler = StandardScaler()
 dtw_distances_scaled = scaler.fit_transform(dtw_distances)
 
-# 创建一个k-means聚类器对象，假设你想将动作分为4类，您可以根据实际情况进行修改
-kmeans = KMeans(n_clusters=4)
-# 对标准化后的DTW距离矩阵进行聚类，并获取聚类结果和标签
-cluster_result = kmeans.fit_predict(dtw_distances_scaled)
-cluster_label = kmeans.labels_
+# 使用层次聚类方法进行聚类
+# linkage函数计算距离矩阵的层次聚类，'ward'代表使用ward方法进行聚类
+Z = linkage(dtw_distances_scaled, method='ward')
+# 根据层次聚类结果获取聚类标签，您可以根据实际情况调整criterion和t参数
+cluster_label = fcluster(Z, t=0.5, criterion='distance')
 
-# 打印聚类结果和标签
-print('Cluster result:', cluster_result)
-print('Cluster labels:', kmeans.labels_)
+# 将聚类结果按照不同的簇进行存储
 cluster_files = {}
 for i, label in enumerate(cluster_label):
     if label not in cluster_files:
         cluster_files[label] = []
     cluster_files[label].append(file_names[i])
 
-# Print the files in each cluster
+# 输出每个簇中的文件列表
 for cluster, files in cluster_files.items():
     print(f"Files in Cluster {cluster}:")
     for file in files:
         print(file)
 
-# 导入matplotlib库
-import matplotlib.pyplot as plt
-# 绘制散点图，横轴为样本索引，纵轴为第一个DTW距离值，颜色为聚类标签
-plt.scatter(range(len(dtw_distances)), dtw_distances[:, 0], c=cluster_result[:len(dtw_distances)]) # 修改：让颜色参数c和横轴或纵轴长度
+# 获取树的根节点
+root_node = to_tree(Z)
 
-# 添加标题和坐标轴标签
-plt.title('Clustering result')
+# 绘制层次聚类树状图（长条形）
+plt.figure(figsize=(10, 6))
+dendrogram(Z, labels=file_names, orientation='top')
+plt.title('Hierarchical Clustering Dendrogram')
 plt.xlabel('Sample index')
-plt.ylabel('DTW Distance')
-# 显示图形
+plt.ylabel('Distance')
 plt.show()
 
-# 绘制聚类图
-plt.figure(figsize=(8, 6))
-for i in range(4):
-    cluster_points = dtw_distances[cluster_label == i]
-    plt.scatter(cluster_points[:, 0], cluster_points[:, 1], label=f'Cluster {i + 1}')
-
-plt.title('Clustering Visualization')
-plt.xlabel('DTW Distance to Cluster Center 1')
-plt.ylabel('DTW Distance to Cluster Center 2')
-plt.legend()
-plt.show()
-
-# 绘制热图
-plt.figure(figsize=(8, 6))
-plt.imshow(dtw_distances, cmap='viridis', origin='lower')
+# 绘制热图（Heatmap）
+plt.figure(figsize=(10, 6))
+plt.imshow(dtw_distances_scaled, cmap='hot', aspect='auto', origin='lower')
 plt.colorbar()
-plt.title('DTW Distance Heatmap')
-plt.xlabel('Sample Index')
-plt.ylabel('Sample Index')
+plt.title('Hierarchical Clustering Heatmap')
+plt.xlabel('Sample index')
+plt.ylabel('Sample index')
 plt.show()
+
+# 绘制圆形树状图（Circular Dendrogram）
+def plot_circle_dendrogram(node, xs, ys):
+    if node.is_leaf():
+        xs.append(node.dist)
+        ys.append(0)
+    else:
+        xs.append(node.dist)
+        ys.append(1)
+        for child in [node.left, node.right]:  # 使用left和right属性来获取子节点
+            plot_circle_dendrogram(child, xs, ys)
+
+plt.figure(figsize=(10, 6))
+xs, ys = [], []
+plot_circle_dendrogram(root_node, xs, ys)
+plt.scatter(xs, ys, c='black')
+plt.title('Circular Hierarchical Clustering Dendrogram')
+plt.xlabel('Distance')
+plt.ylabel('Depth')
+plt.show()
+
+# 绘制层次聚类网格图（Dendrogram Grid）
+plt.figure(figsize=(12, 8))
+dendrogram(Z, labels=file_names, orientation='left', leaf_font_size=8, above_threshold_color='gray')
+plt.title('Hierarchical Clustering Dendrogram Grid')
+plt.xlabel('Sample index')
+plt.ylabel('Distance')
+plt.show()
+
+# 获取不重复的聚类标签
+unique_labels = np.unique(cluster_label)
+
+# 统计聚类的类数
+num_clusters = len(unique_labels)
+print("当前样本被聚类成", num_clusters, "类")
