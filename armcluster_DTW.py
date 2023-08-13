@@ -25,7 +25,7 @@ def read_arm_data(filename):
         data_lines = lines[frame_time_index + 1:]
         # 将数据转换为numpy数组
         data = np.array([list(map(float, line.split())) for line in data_lines])
-        # 选择手臂部分的数据，这里假设手臂部分有6个特征，您可以根据您的数据格式进行修改
+        # 选择手臂部分的数据
         arm_data = data[:, 27:27 + 24]
         # 返回手臂部分数据作为这个文件的特征向量
         return arm_data
@@ -54,7 +54,7 @@ for i in range(len(feature_vectors)):
 scaler = StandardScaler()
 dtw_distances_scaled = scaler.fit_transform(dtw_distances)
 
-# 创建一个k-means聚类器对象，假设你想将动作分为4类，您可以根据实际情况进行修改
+# 创建一个k-means聚类器对象
 kmeans = KMeans(n_clusters=4)
 # 对标准化后的DTW距离矩阵进行聚类，并获取聚类结果和标签
 cluster_result = kmeans.fit_predict(dtw_distances_scaled)

@@ -1,6 +1,6 @@
 import numpy as np
 import pandas as pd
-from sklearn.cluster import KMeans # 选择k-means算法，你也可以换成其他的
+from sklearn.cluster import KMeans
 import glob # 用来读取文件夹中的所有文件
 from sklearn.preprocessing import StandardScaler
 from scipy.spatial.distance import cdist
@@ -26,12 +26,12 @@ def read_arm_data(filename):
         data_lines = lines[frame_time_index + 1:]
         # 将数据转换为numpy数组
         data = np.array([list(map(float, line.split())) for line in data_lines])
-        # 选择手臂部分的数据，这里假设手臂部分有6个特征，你可以根据你的数据格式进行修改
+        # 选择手臂部分的数据
         arm_data = data[:, 27:27 + 24]
         # 返回手臂部分数据的平均值，作为这个文件的特征向量
         return arm_data.mean(axis=0) # 修改：返回平均值，而不是所有特征
 
-# 定义文件夹路径，这里假设所有的bvh文件都在同一个文件夹中，你可以根据你的实际情况进行修改
+# 定义文件夹路径
 folder_path = 'D:/Study/NotCleaned/NotCleaned/AbeTomoaki/'
 #D:\Dev\AbeTomoaki D:/Study/NotCleaned/NotCleaned/AbeTomoaki/
 # 获取文件夹中所有的bvh文件名

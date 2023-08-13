@@ -27,13 +27,13 @@ def read_arm_data(filename):
         data_lines = lines[frame_time_index + 1:]
         # 将数据转换为numpy数组
         data = np.array([list(map(float, line.split())) for line in data_lines])
-        # 选择手臂部分的数据，这里假设手臂部分有6个特征，您可以根据您的数据格式进行修改
+        # 选择手臂部分的数据
         arm_data = data[:, 27:27 + 24]
         # 返回手臂部分数据作为这个文件的特征向量
         return arm_data
 
 
-# 定义文件夹路径，这里假设所有的bvh文件都在同一个文件夹中，您可以根据您的实际情况进行修改
+# 定义文件夹路径
 folder_path = 'D:\Dev\AbeTomoaki/'
 # D:\Dev\AbeTomoaki
 # 获取文件夹中所有的bvh文件名
