@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="SshConfigs">
+    <configs>
+      <sshConfig authType="PASSWORD" connectionConfig="{&quot;serverAliveInterval&quot;:300}" id="6f12721f-60ce-495e-98eb-902216fbb3b3" port="22" customName="uken@ICD-DGX-STATION.local" nameFormat="CUSTOM" useOpenSSHConfig="true">
+        <option name="customName" value="uken@ICD-DGX-STATION.local" />
+      </sshConfig>
+    </configs>
+  </component>
+</project>

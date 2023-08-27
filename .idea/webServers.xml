@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="WebServers">
+    <option name="servers">
+      <webServer id="308212c4-f4ab-402e-9187-973eb1b36ccb" name="uken@ICD-DGX-STATION.local">
+        <fileTransfer accessType="SFTP" port="22" sshConfigId="6f12721f-60ce-495e-98eb-902216fbb3b3" sshConfig="uken@ICD-DGX-STATION.local">
+          <advancedOptions>
+            <advancedOptions dataProtectionLevel="Private" passiveMode="true" shareSSLContext="true" />
+          </advancedOptions>
+        </fileTransfer>
+      </webServer>
+    </option>
+  </component>
+</project>

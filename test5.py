@@ -37,6 +37,7 @@ def read_arm_data(filename):
 folder_path = 'C:/Users/YUXUAN TENG/Downloads/MotinBVH_Part/'
 #C:/Users/YUXUAN TENG/Downloads/MotinBVH_Part/
 #D:\Dev\AbeTomoaki/
+#C:\Users\YUXUAN TENG\Downloads\cmuconvert-daz-nohipcorrect-01-09\part
 
 # 获取文件夹中所有的bvh文件名
 file_names = glob.glob(folder_path + '*.bvh')
