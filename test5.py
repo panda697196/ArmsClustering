@@ -1,5 +1,6 @@
 import numpy as np
 import pandas as pd
+import tensorflow as tf
 import glob
 from sklearn.preprocessing import StandardScaler
 from fastdtw import fastdtw
@@ -7,6 +8,11 @@ from tqdm import tqdm
 from sklearn.cluster import DBSCAN
 import matplotlib.pyplot as plt
 import seaborn as sns
+
+# 设置TensorFlow在GPU上运行
+physical_devices = tf.config.list_physical_devices('GPU')
+if physical_devices:
+    tf.config.experimental.set_memory_growth(physical_devices[0], True)
 
 # 定义读取bvh文件中手臂部分数据的函数
 def read_arm_data(filename):
@@ -52,7 +58,8 @@ for file_name in file_names:
     # 将特征向量添加到列表中
     feature_vectors.append(feature_vector)
 
-# 计算所有特征向量之间的DTW距离矩阵
+
+# 使用GPU加速计算DTW距离矩阵
 dtw_distances = np.zeros((len(feature_vectors), len(feature_vectors)))
 for i in tqdm(range(len(feature_vectors))):
     for j in range(len(feature_vectors)):
