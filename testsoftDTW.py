@@ -41,7 +41,7 @@ def read_arm_data(filename):
         return arm_data
 
 # 定义文件夹路径
-folder_path = 'C:/Users/YUXUAN TENG/Downloads/MotionBVH_rotated/'
+folder_path = 'C:/Users/YUXUAN TENG/Downloads/MotinBVH_Part/'
 #C:/Users/YUXUAN TENG/Downloads/MotinBVH_Part/
 #D:\Dev\AbeTomoaki/
 #C:\Users\YUXUAN TENG\Downloads\cmuconvert-daz-nohipcorrect-01-09\part

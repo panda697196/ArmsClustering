@@ -4,6 +4,7 @@ import glob
 from sklearn.preprocessing import StandardScaler
 from fastdtw import fastdtw
 from tqdm import tqdm
+from sklearn.cluster import DBSCAN
 import matplotlib.pyplot as plt
 import matplotlib as mpl
 mpl.use('Agg')
@@ -67,7 +68,7 @@ scaler = StandardScaler()
 dtw_distances_scaled = scaler.fit_transform(dtw_distances)
 
 # 创建一个DBSCAN聚类器对象
-dbscan = DBSCAN(eps=0.65, min_samples=1)
+dbscan = DBSCAN(eps=3, min_samples=3)
 # 对标准化后的DTW距离矩阵进行聚类，并获取聚类标签
 cluster_label = dbscan.fit_predict(dtw_distances_scaled)
 
