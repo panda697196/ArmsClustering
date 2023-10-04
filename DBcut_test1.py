@@ -1,9 +1,6 @@
 import numpy as np
 import pandas as pd
 import glob
-from sklearn.preprocessing import StandardScaler
-from fastdtw import fastdtw
-from tqdm import tqdm
 from sklearn.cluster import DBSCAN
 import matplotlib.pyplot as plt
 import matplotlib as mpl
@@ -38,11 +35,7 @@ def read_arm_data(filename):
         return arm_data
 
 # 定义文件夹路径
-folder_path = '/home/uken/workspace/EParts/'
-#C:/Users/YUXUAN TENG/Downloads/MotinBVH_Part/
-#/home/uken/workspace/MotionBVH_rotated
-#D:\Dev\AbeTomoaki/
-#C:\Users\YUXUAN TENG\Downloads\cmuconvert-daz-nohipcorrect-01-09\part
+folder_path = 'C:/Users/YUXUAN TENG/Downloads/CutParts/'
 
 # 获取文件夹中所有的bvh文件名
 file_names = glob.glob(folder_path + '*.bvh')
@@ -57,20 +50,15 @@ for file_name in file_names:
     # 将特征向量添加到列表中
     feature_vectors.append(feature_vector)
 
-# 计算所有特征向量之间的DTW距离矩阵
-dtw_distances = np.zeros((len(feature_vectors), len(feature_vectors)))
-for i in tqdm(range(len(feature_vectors))):
-    for j in range(len(feature_vectors)):
-        dtw_distances[i, j], _ = fastdtw(feature_vectors[i], feature_vectors[j])
+# 将列表转换为numpy数组
+feature_vectors = np.array(feature_vectors)
 
-# 使用StandardScaler对DTW距离矩阵进行标准化
-scaler = StandardScaler()
-dtw_distances_scaled = scaler.fit_transform(dtw_distances)
+# 将三维数组转换为二维数组
+feature_vectors = feature_vectors.reshape(feature_vectors.shape[0], -1)
 
-# 创建一个DBSCAN聚类器对象
-dbscan = DBSCAN(eps=0.65, min_samples=1)
-# 对标准化后的DTW距离矩阵进行聚类，并获取聚类标签
-cluster_label = dbscan.fit_predict(dtw_distances_scaled)
+# 使用原始数据进行DBSCAN聚类
+dbscan = DBSCAN(eps=0.5, min_samples=1)
+cluster_label = dbscan.fit_predict(feature_vectors)
 
 # 打印聚类标签
 print('Cluster labels:', cluster_label)
@@ -88,52 +76,19 @@ for cluster, files in cluster_files.items():
     for file in files:
         print(file)
 
-# 匹配文件名中的人名和感情信息
-person_emotion_pattern = re.compile(r'(\d{4}-\d{2}-\d{2})_(\w+)_(\w+)_\d+_\w+\.bvh')
-# 将文件名与对应的聚类标签保存到字典中
-cluster_files = {}
-for i, label in enumerate(cluster_label):
-    if label not in cluster_files:
-        cluster_files[label] = []
-    cluster_files[label].append(file_names[i])
-
-# 遍历每个聚类中的文件，并提取人名和感情信息
-for cluster, files in cluster_files.items():
-    print(f"Person and emotions in Cluster {cluster}:")
-    person_emotions = []
-    for file in files:
-        # 使用正则表达式匹配人名和感情信息，并添加到列表中
-        match = person_emotion_pattern.search(file)
-        if match:
-            person_emotions.append((match.group(2), match.group(3)))
-    # 使用Counter对象统计每种组合出现的次数，并打印结果
-    person_emotion_counts = Counter(person_emotions)
-    for (person, emotion), count in person_emotion_counts.items():
-        print(f"{person} - {emotion}: {count} times")
-
-
-
-# 绘制聚类图
+# 绘制散点图
 plt.figure(figsize=(8, 6))
 unique_labels = np.unique(cluster_label)
 for label in unique_labels:
     if label == -1:
-        cluster_points = dtw_distances[cluster_label == label]
+        cluster_points = feature_vectors[cluster_label == label]
         plt.scatter(cluster_points[:, 0], cluster_points[:, 1], label='Noise', alpha=0.5)
     else:
-        cluster_points = dtw_distances[cluster_label == label]
+        cluster_points = feature_vectors[cluster_label == label]
         plt.scatter(cluster_points[:, 0], cluster_points[:, 1], label=f'Cluster {label}', alpha=0.5)
 
 plt.title('DBSCAN Clustering Visualization')
-plt.xlabel('DTW Distance to Cluster Center 1')
-plt.ylabel('DTW Distance to Cluster Center 2')
+plt.xlabel('Feature 1')
+plt.ylabel('Feature 2')
 plt.legend()
-# 添加标题和坐标轴标签
-plt.title('DBSCAN Clustering Visualization')
-plt.xlabel('MDS Dimension 1')
-plt.ylabel('MDS Dimension 2')
-
-# 显示图形
-plt.show()
-# 保存图形
-plt.savefig('cluster1.png')
+plt.savefig('dbscan_cluster_visualization.png')
