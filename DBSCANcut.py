@@ -38,7 +38,7 @@ def read_arm_data(filename):
         return arm_data
 
 # 定义文件夹路径
-folder_path = 'C:/Users/YUXUAN TENG/Downloads/CutPartss/'
+folder_path = 'C:/Users/YUXUAN TENG/Downloads/MotionBVH_rotated_cut/'
 #Emillyacut CutParts MotionBVH_rotated_cut
 
 # 获取文件夹中所有的bvh文件名
