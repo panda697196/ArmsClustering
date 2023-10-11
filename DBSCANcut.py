@@ -11,6 +11,10 @@ from collections import Counter
 import re
 import seaborn as sns
 from mpl_toolkits.mplot3d import Axes3D
+import numpy as np
+import matplotlib.pyplot as plt
+from sklearn.decomposition import PCA
+from sklearn.manifold import TSNE
 
 # 定义读取bvh文件中手臂部分数据的函数
 def read_arm_data(filename):
@@ -84,44 +88,27 @@ for cluster, files in cluster_files.items():
     print(f"Cluster {cluster} contains {len(files)} files:")
     for file in files:
         print(file)
+# Create PCA and t-SNE objects
+pca = PCA(n_components=2)
+tsne = TSNE(n_components=2)
 
-# 绘制聚类图
+# Apply PCA and t-SNE to feature_vectors
+X_pca = pca.fit_transform(feature_vectors)
+X_tsne = tsne.fit_transform(feature_vectors)
+
+# Create a new figure for visualization
 plt.figure(figsize=(8, 6))
-unique_labels = np.unique(cluster_label)
-for label in unique_labels:
-    if label == -1:
-        cluster_points = distances[cluster_label == label]
-        plt.scatter(cluster_points[:, 0], cluster_points[:, 1], label='Noise', alpha=0.5)
-    else:
-        cluster_points = distances[cluster_label == label]
-        plt.scatter(cluster_points[:, 0], cluster_points[:, 1], label=f'Cluster {label}', alpha=0.5)
 
-plt.title('DBSCAN Clustering Visualization')
-plt.xlabel('Euclidean Distance to Cluster Center 1')
-plt.ylabel('Euclidean Distance to Cluster Center 2')
-plt.legend()
-plt.savefig('dbscan_cluster_visualization.png')
+# Plot the results of PCA or t-SNE
+plt.scatter(X_pca[:, 0], X_pca[:, 1], c=cluster_label, cmap='viridis', alpha=0.5)
+# or
+# plt.scatter(X_tsne[:, 0], X_tsne[:,
+# 1], c=cluster_label, cmap='viridis', alpha=0.5)
 
-# 创建一个三维图表
-fig = plt.figure(figsize=(8, 6))
-ax = fig.add_subplot(111, projection='3d')
+# Add title and labels
+plt.title('PCA Visualization')
+plt.xlabel('PCA Dimension 1')
+plt.ylabel('PCA Dimension 2')
 
-# 选择第三个特征作为第三个轴，您可以根据您的数据选择其他特征
-feature_3 = feature_vectors[:, 2]
-
-# 绘制三维散点图
-unique_labels = np.unique(cluster_label)
-for label in unique_labels:
-    if label == -1:
-        cluster_points = distances[cluster_label == label]
-        ax.scatter(cluster_points[:, 0], cluster_points[:, 1], feature_3[cluster_label == label], label='Noise', alpha=0.5)
-    else:
-        cluster_points = distances[cluster_label == label]
-        ax.scatter(cluster_points[:, 0], cluster_points[:, 1], feature_3[cluster_label == label], label=f'Cluster {label}', alpha=0.5)
-
-ax.set_xlabel('Euclidean Distance to Cluster Center 1')
-ax.set_ylabel('Euclidean Distance to Cluster Center 2')
-ax.set_zlabel('Feature 3')
-plt.legend(bbox_to_anchor=(1.05, 1))
-plt.title('DBSCAN Clustering 3D Visualization')
+# Show the plot
 plt.show()

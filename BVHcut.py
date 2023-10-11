@@ -2,9 +2,9 @@
 import os
 
 # 指定输入和输出文件夹以及帧数间隔
-input_folder = 'C:/Users/YUXUAN TENG/Downloads/MotinBVH_Parts/'
+input_folder = 'C:/Users/YUXUAN TENG/Downloads/MotionBVH_rotated/'
 #C:\Users\YUXUAN TENG\Downloads\MotinBVH_Parts MotionBVH_rotated
-output_folder = 'C:/Users/YUXUAN TENG/Downloads/Emillyacut/'
+output_folder = 'C:/Users/YUXUAN TENG/Downloads/MotionBVH_rotated_cut/'
 #Emillyacut MotionBVH_rotated_cut
 frame_interval = 240  # 240帧，代表两秒的数据
 
