@@ -42,8 +42,8 @@ def read_arm_data(filename):
         return arm_data
 
 # 定义文件夹路径
-folder_path = 'C:/Dev/Emilya/AllBVH_CUT/'
-#Emillyacut CutParts MotionBVH_rotated_cut
+folder_path = 'D:/Dev/Emilya/Netural_CUT/'
+#Emillyacut CutParts MotionBVH_rotated_cut D:/Dev/Emilya/Netural_CUT_Parts
 
 # 获取文件夹中所有的bvh文件名
 file_names = glob.glob(folder_path + '*.bvh')
@@ -68,7 +68,7 @@ feature_vectors = feature_vectors.reshape(feature_vectors.shape[0], -1)
 distances = pairwise_distances(feature_vectors, metric='euclidean')
 
 # 创建一个DBSCAN聚类器对象
-dbscan = DBSCAN(eps=100, min_samples=3, metric='precomputed')  # 添加metric='precomputed'
+dbscan = DBSCAN(eps=1000, min_samples=3, metric='precomputed')  # 添加metric='precomputed'
 
 # 对距离矩阵进行聚类
 cluster_label = dbscan.fit_predict(distances)
