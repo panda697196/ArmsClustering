@@ -3,10 +3,10 @@ import shutil
 from tqdm import tqdm
 
 # 源文件夹的路径
-source_folder = 'D:/Dev/Emilya/All_BvH_Files/'
+source_folder = 'D:/Dev/Emilya/AllNArm/'
 
 # 目标文件夹的路径
-destination_folder = 'D:/Dev/Emilya/AllBVH/'
+destination_folder = 'D:/Dev/Emilya/AllNArm/'
 
 # 获取源文件夹中所有BVH文件的路径
 bvh_files = [os.path.join(root, filename) for root, _, filenames in os.walk(source_folder) for filename in filenames if filename.endswith('.bvh')]

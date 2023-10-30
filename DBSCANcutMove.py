@@ -1,0 +1,168 @@
+import numpy as np
+import pandas as pd
+import glob
+from sklearn.preprocessing import StandardScaler
+from sklearn.metrics import pairwise_distances
+from sklearn.cluster import DBSCAN
+import matplotlib.pyplot as plt
+import matplotlib as mpl
+#mpl.use('Agg')
+from collections import Counter
+import re
+import seaborn as sns
+from mpl_toolkits.mplot3d import Axes3D
+import numpy as np
+import matplotlib.pyplot as plt
+from sklearn.decomposition import PCA
+from sklearn.manifold import TSNE
+import os
+import shutil
+
+# 定义读取bvh文件中手臂部分数据的函数
+def read_arm_data(filename):
+    # 打开文件
+    with open(filename, 'r') as f:
+        # 读取所有行
+        lines = f.readlines()
+        # 找到MOTION行的索引
+        motion_index = lines.index('MOTION\n')
+        # 找到Frames:行的索引
+        frames_index = motion_index + 1
+        # 获取帧数
+        frames = int(lines[frames_index].split()[1])
+        # 找到Frame Time:行的索引
+        frame_time_index = motion_index + 2
+        # 获取帧时间
+        frame_time = float(lines[frame_time_index].split()[2])
+        # 获取数据部分的所有行
+        data_lines = lines[frame_time_index + 1:]
+        # 将数据转换为numpy数组
+        data = np.array([list(map(float, line.split())) for line in data_lines])
+        # 选择手臂部分的数据
+        arm_data = data[:, 27:27 + 24]
+        # 返回手臂部分数据作为这个文件的特征向量
+        return arm_data
+
+# 定义文件夹路径
+folder_path = 'D:/Dev/Emilya/AllNArm_CUT/'
+#Emillyacut CutParts MotionBVH_rotated_cut D:/Dev/Emilya/Netural_CUT_Parts
+
+# 获取文件夹中所有的bvh文件名
+file_names = glob.glob(folder_path + '*.bvh')
+
+# 创建一个空的列表，用来存放所有文件的特征向量
+feature_vectors = []
+
+# 遍历所有文件名
+for file_name in file_names:
+    # 调用函数，读取手臂部分数据，并返回特征向量
+    feature_vector = read_arm_data(file_name)
+    # 将特征向量添加到列表中
+    feature_vectors.append(feature_vector)
+
+# 将列表转换为numpy数组，方便后续计算距离矩阵
+feature_vectors = np.array(feature_vectors)
+
+# 将三维数组转换为二维数组
+feature_vectors = feature_vectors.reshape(feature_vectors.shape[0], -1)
+
+# 计算特征向量之间的距离矩阵（欧氏距离）
+distances = pairwise_distances(feature_vectors, metric='euclidean')
+
+# 创建一个DBSCAN聚类器对象
+dbscan = DBSCAN(eps=1000, min_samples=3, metric='precomputed')  # 添加metric='precomputed'
+
+# 对距离矩阵进行聚类
+cluster_label = dbscan.fit_predict(distances)
+
+# 打印聚类标签
+print('Cluster labels:', cluster_label)
+
+# 将文件名与对应的聚类标签保存到字典中，并统计每个聚类中的文件数量
+cluster_files = {}
+for i, label in enumerate(cluster_label):
+    if label not in cluster_files:
+        cluster_files[label] = []
+    cluster_files[label].append(file_names[i])
+
+# 打印每个聚类中的文件及文件数量
+for cluster, files in cluster_files.items():
+    print(f"Cluster {cluster} contains {len(files)} files:")
+    for file in files:
+        print(file)
+
+# 创建目录并移动文件到相应的聚类文件夹
+output_folder = 'D:/Dev/Emilya/AllNArm_CUT/clustered_files'
+os.makedirs(output_folder, exist_ok=True)
+
+for cluster, files in cluster_files.items():
+    cluster_folder = os.path.join(output_folder, f'Cluster_{cluster}')
+    os.makedirs(cluster_folder, exist_ok=True)  # 创建聚类文件夹
+
+    # 移动文件到相应的聚类文件夹
+    for file in files:
+        file_name = os.path.basename(file)
+        destination_file = os.path.join(cluster_folder, file_name)
+        shutil.copy(file, destination_file)
+
+print("Files have been moved to the respective cluster folders.")
+
+# 创建PCA对象，指定降维到的目标维度（通常为2或3）
+pca_2d = PCA(n_components=2)
+pca_3d = PCA(n_components=3)
+
+# 对数据进行PCA降维
+X_pca_2d = pca_2d.fit_transform(feature_vectors)
+X_pca_3d = pca_3d.fit_transform(feature_vectors)
+
+# 创建一个新的图形窗口
+plt.figure(figsize=(16, 6))  # 增加图形窗口的宽度，以便同时显示两个子图
+
+# 2D PCA可视化
+plt.subplot(1, 2, 1)  # 创建第一个子图
+plt.scatter(X_pca_2d[:, 0], X_pca_2d[:, 1], c=cluster_label, cmap='viridis', alpha=0.5)
+plt.title('2D PCA Visualization')
+plt.xlabel('PCA Dimension 1')
+plt.ylabel('PCA Dimension 2')
+
+# 添加颜色条
+cbar = plt.colorbar()
+cbar.set_label('Cluster Label')
+
+# 创建图例
+legend_labels = list(set(cluster_label))
+for label in legend_labels:
+    plt.scatter([], [], label=f'Cluster {label}', c='k')
+
+# 显示图例
+plt.legend()
+
+# 3D PCA可视化
+ax = plt.subplot(1, 2, 2, projection='3d')  # 创建第二个子图，使用3D投影
+scatter = ax.scatter(X_pca_3d[:, 0], X_pca_3d[:, 1], X_pca_3d[:, 2], c=cluster_label, cmap='viridis', alpha=0.5)
+ax.set_title('3D PCA Visualization')
+ax.set_xlabel('PCA Dimension 1')
+ax.set_ylabel('PCA Dimension 2')
+ax.set_zlabel('PCA Dimension 3')
+
+# 添加颜色条
+cbar = plt.colorbar(scatter)
+cbar.set_label('Cluster Label')
+
+# 显示图形
+plt.show()
+
+# 计算距离矩阵（欧氏距离）
+distances = pairwise_distances(feature_vectors, metric='euclidean')
+
+# 绘制距离直方图
+plt.hist(distances, bins=50, alpha=0.5)
+plt.title("Distance Histogram")
+plt.xlabel("Distance")
+plt.ylabel("Frequency")
+plt.show()
+
+plt.imshow(distances, cmap='viridis', aspect='auto')
+plt.title("Distance Matrix")
+plt.colorbar()
+plt.show()
