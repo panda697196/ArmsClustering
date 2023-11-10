@@ -2,9 +2,9 @@
 import os
 
 # 指定输入和输出文件夹以及帧数间隔
-input_folder = 'D:/Dev/Emilya/AllNArm/'
+input_folder = 'D:/Data/Allarm/'
 #C:\Users\YUXUAN TENG\Downloads\MotinBVH_Parts MotionBVH_rotated
-output_folder = 'D:/Dev/Emilya/AllNArm_CUT/'
+output_folder = 'D:/Data/Allarm_cut/'
 #Emillyacut MotionBVH_rotated_cut
 frame_interval = 240  # 240帧，代表两秒的数据
 

@@ -1,4 +1,3 @@
-import numpy as np
 import pandas as pd
 import glob
 from sklearn.preprocessing import StandardScaler
@@ -17,7 +16,14 @@ from sklearn.decomposition import PCA
 from sklearn.manifold import TSNE
 import os
 import shutil
+from fastdtw import fastdtw
+from tqdm import tqdm
+from scipy.spatial.distance import euclidean
+from sklearn.cluster import KMeans
+import numpy as np
+import torch
 from soft_dtw_cuda import SoftDTW
+
 
 # 定义读取bvh文件中手臂部分数据的函数
 def read_arm_data(filename):
@@ -45,7 +51,7 @@ def read_arm_data(filename):
         return arm_data
 
 # 定义文件夹路径
-folder_path = 'D:/Data/AllNarm_Cut/'
+folder_path = 'D:/Data/AllNarm_cut/'
 #Emillyacut CutParts MotionBVH_rotated_cut D:/Dev/Emilya/Netural_CUT_Parts
 
 # 获取文件夹中所有的bvh文件名
@@ -61,35 +67,83 @@ for file_name in file_names:
     # 将特征向量添加到列表中
     feature_vectors.append(feature_vector)
 
-# 将列表转换为numpy数组，方便后续计算距离矩阵
-feature_vectors = np.array(feature_vectors)
+# 将 feature_vectors 转换为 PyTorch 张量
+data = torch.tensor(feature_vectors)
 
-# 将三维数组转换为二维数组
-feature_vectors = feature_vectors.reshape(feature_vectors.shape[0], -1)
-
-# 计算特征向量之间的距离矩阵（欧氏距离）
-distances = pairwise_distances(feature_vectors, metric='euclidean')
-
-# # 创建一个DBSCAN聚类器对象
-# dbscan = DBSCAN(eps=1180, min_samples=3, metric='precomputed')  # 添加metric='precomputed'
+# # 计算Soft DTW距离矩阵
+# soft_dtw = SoftDTW(use_cuda=True, gamma=1.0)  # 假设已经导入了正确的 Soft DTW 实现
+# soft_dtw_distances = []  # 用于存储 Soft DTW 距离矩阵
 #
-# # 对距离矩阵进行聚类
-# cluster_label = dbscan.fit_predict(distances)
+# for i in range(len(data)):
+#     for j in range(i+1, len(data)):
+#         # 计算 Soft DTW 距离
+#         distance = soft_dtw(data[i:i+1], data[j:j+1]).item()
+#         soft_dtw_distances.append(distance)
+#
+# # 将距离转换为对称矩阵形式
+# n = len(data)
+# distance_matrix = np.zeros((n, n))
+# indices = np.triu_indices(n, k=1)
+# distance_matrix[indices] = soft_dtw_distances
+# distance_matrix[(indices[1], indices[0])] = soft_dtw_distances
+
+if os.path.exists('soft_dtw_distances.npy') and os.path.exists('soft_dtw_distances_scaled.npy'):
+    dtw_distances = np.load('soft_dtw_distances.npy')
+    dtw_distances_scaled = np.load('soft_dtw_distances_scaled.npy')
+else:
+    # # 计算所有特征向量之间的DTW距离矩阵
+    # dtw_distances = np.zeros((len(feature_vectors), len(feature_vectors)))
+    # for i in tqdm(range(len(feature_vectors))):
+    #     for j in range(len(feature_vectors)):
+    #         dtw_distances[i, j], _ = fastdtw(feature_vectors[i], feature_vectors[j])
+    #
+    # # 使用StandardScaler对DTW距离矩阵进行标准化
+    # scaler = StandardScaler()
+    # dtw_distances_scaled = scaler.fit_transform(dtw_distances)
+
+    # 计算Soft DTW距离矩阵
+    soft_dtw = SoftDTW(use_cuda=True, gamma=1.0)  # 假设已经导入了正确的 Soft DTW 实现
+    soft_dtw_distances = []  # 用于存储 Soft DTW 距离矩阵
+
+    for i in range(len(data)):
+        for j in range(i+1, len(data)):
+            # 计算 Soft DTW 距离
+            distance = soft_dtw(data[i:i+1], data[j:j+1]).item()
+            soft_dtw_distances.append(distance)
+
+    # 将距离转换为对称矩阵形式
+    n = len(data)
+    distance_matrix = np.zeros((n, n))
+    indices = np.triu_indices(n, k=1)
+    distance_matrix[indices] = soft_dtw_distances
+    distance_matrix[(indices[1], indices[0])] = soft_dtw_distances
+    scaler = StandardScaler()
+    soft_dtw_distances_scaled = scaler.fit_transform(soft_dtw_distances)
+
+    # 将计算得到的DTW距离保存到文件中
+    np.save('soft_dtw_distances.npy', soft_dtw_distances)
+    np.save('soft_dtw_distances_scaled.npy', soft_dtw_distances_scaled)
+
+
+# 创建一个DBSCAN聚类器对象
+dbscan = DBSCAN(eps=10, min_samples=1)  # 可根据实际情况调整eps和min_samples参数
+# 对标准化后的DTW距离矩阵进行聚类，并获取聚类标签
+cluster_label = dbscan.fit_predict(soft_dtw_distances_scaled)
+
+# 打印聚类标签
+print('Cluster labels:', cluster_label)
+
+
+# # 创建一个K-Means聚类器对象，指定要分成的簇数（k）
+# k = 2  # 你可以根据实际情况调整簇数
+# kmeans = KMeans(n_clusters=k)
+#
+# # 对标准化后的DTW距离矩阵进行聚类，并获取聚类标签
+# cluster_label = kmeans.fit_predict(dtw_distances_scaled)
 #
 # # 打印聚类标签
 # print('Cluster labels:', cluster_label)
 
-from sklearn.cluster import KMeans
-
-# 创建一个K-Means聚类器对象，指定要分成的簇数（k）
-k = 2  # 你可以根据实际情况调整簇数
-kmeans = KMeans(n_clusters=k)
-
-# 对标准化后的DTW距离矩阵进行聚类，并获取聚类标签
-cluster_label = kmeans.fit_predict(distances)
-
-# 打印聚类标签
-print('Cluster labels:', cluster_label)
 
 
 # 将文件名与对应的聚类标签保存到字典中，并统计每个聚类中的文件数量
@@ -106,7 +160,7 @@ for cluster, files in cluster_files.items():
         print(file)
 
 # 创建目录并移动文件到相应的聚类文件夹
-output_folder = 'D:/Dev/Emilya/AllNArm_CUT/clustered_files'
+output_folder = 'D:/Data/AllNarm_cut/clustered_files'
 os.makedirs(output_folder, exist_ok=True)
 
 for cluster, files in cluster_files.items():
@@ -120,6 +174,9 @@ for cluster, files in cluster_files.items():
         shutil.copy(file, destination_file)
 
 print("Files have been moved to the respective cluster folders.")
+
+feature_vectors = np.array(feature_vectors)  # 转换为NumPy数组
+feature_vectors = feature_vectors.reshape(feature_vectors.shape[0], -1)
 
 # 创建PCA对象，指定降维到的目标维度（通常为2或3）
 pca_2d = PCA(n_components=2)
@@ -178,5 +235,18 @@ plt.show()
 
 plt.imshow(distances, cmap='viridis', aspect='auto')
 plt.title("Distance Matrix")
+plt.colorbar()
+plt.show()
+
+# 绘制距离直方图
+plt.hist(soft_dtw_distances.flatten(), bins=50, alpha=0.5)
+plt.title("DTW Distance Histogram")
+plt.xlabel("Distance")
+plt.ylabel("Frequency")
+plt.show()
+
+# 可视化距离矩阵
+plt.imshow(soft_dtw_distances, cmap='viridis', aspect='auto')
+plt.title("DTW Distance Matrix")
 plt.colorbar()
 plt.show()

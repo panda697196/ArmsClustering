@@ -17,7 +17,11 @@ from sklearn.decomposition import PCA
 from sklearn.manifold import TSNE
 import os
 import shutil
-from soft_dtw_cuda import SoftDTW
+from fastdtw import fastdtw
+from tqdm import tqdm
+from scipy.spatial.distance import euclidean
+from sklearn.cluster import KMeans
+
 
 # 定义读取bvh文件中手臂部分数据的函数
 def read_arm_data(filename):
@@ -45,7 +49,7 @@ def read_arm_data(filename):
         return arm_data
 
 # 定义文件夹路径
-folder_path = 'D:/Data/AllNarm_Cut/'
+folder_path = 'D:/Data/AllNarm_cut/'
 #Emillyacut CutParts MotionBVH_rotated_cut D:/Dev/Emilya/Netural_CUT_Parts
 
 # 获取文件夹中所有的bvh文件名
@@ -61,35 +65,44 @@ for file_name in file_names:
     # 将特征向量添加到列表中
     feature_vectors.append(feature_vector)
 
-# 将列表转换为numpy数组，方便后续计算距离矩阵
-feature_vectors = np.array(feature_vectors)
+if os.path.exists('dtw_distances.npy') and os.path.exists('dtw_distances_scaled.npy'):
+    dtw_distances = np.load('dtw_distances.npy')
+    dtw_distances_scaled = np.load('dtw_distances_scaled.npy')
+else:
+    # 计算所有特征向量之间的DTW距离矩阵
+    dtw_distances = np.zeros((len(feature_vectors), len(feature_vectors)))
+    for i in tqdm(range(len(feature_vectors))):
+        for j in range(len(feature_vectors)):
+            dtw_distances[i, j], _ = fastdtw(feature_vectors[i], feature_vectors[j])
 
-# 将三维数组转换为二维数组
-feature_vectors = feature_vectors.reshape(feature_vectors.shape[0], -1)
+    # 使用StandardScaler对DTW距离矩阵进行标准化
+    scaler = StandardScaler()
+    dtw_distances_scaled = scaler.fit_transform(dtw_distances)
 
-# 计算特征向量之间的距离矩阵（欧氏距离）
-distances = pairwise_distances(feature_vectors, metric='euclidean')
+    # 将计算得到的DTW距离保存到文件中
+    np.save('dtw_distances.npy', dtw_distances)
+    np.save('dtw_distances_scaled.npy', dtw_distances_scaled)
 
-# # 创建一个DBSCAN聚类器对象
-# dbscan = DBSCAN(eps=1180, min_samples=3, metric='precomputed')  # 添加metric='precomputed'
+
+# 创建一个DBSCAN聚类器对象
+dbscan = DBSCAN(eps=15, min_samples=1)  # 可根据实际情况调整eps和min_samples参数
+# 对标准化后的DTW距离矩阵进行聚类，并获取聚类标签
+cluster_label = dbscan.fit_predict(dtw_distances_scaled)
+
+# 打印聚类标签
+print('Cluster labels:', cluster_label)
+
+
+# # 创建一个K-Means聚类器对象，指定要分成的簇数（k）
+# k = 2  # 你可以根据实际情况调整簇数
+# kmeans = KMeans(n_clusters=k)
 #
-# # 对距离矩阵进行聚类
-# cluster_label = dbscan.fit_predict(distances)
+# # 对标准化后的DTW距离矩阵进行聚类，并获取聚类标签
+# cluster_label = kmeans.fit_predict(dtw_distances_scaled)
 #
 # # 打印聚类标签
 # print('Cluster labels:', cluster_label)
 
-from sklearn.cluster import KMeans
-
-# 创建一个K-Means聚类器对象，指定要分成的簇数（k）
-k = 2  # 你可以根据实际情况调整簇数
-kmeans = KMeans(n_clusters=k)
-
-# 对标准化后的DTW距离矩阵进行聚类，并获取聚类标签
-cluster_label = kmeans.fit_predict(distances)
-
-# 打印聚类标签
-print('Cluster labels:', cluster_label)
 
 
 # 将文件名与对应的聚类标签保存到字典中，并统计每个聚类中的文件数量
@@ -106,7 +119,7 @@ for cluster, files in cluster_files.items():
         print(file)
 
 # 创建目录并移动文件到相应的聚类文件夹
-output_folder = 'D:/Dev/Emilya/AllNArm_CUT/clustered_files'
+output_folder = 'D:/Data/AllNarm_cut/clustered_files'
 os.makedirs(output_folder, exist_ok=True)
 
 for cluster, files in cluster_files.items():
@@ -120,6 +133,9 @@ for cluster, files in cluster_files.items():
         shutil.copy(file, destination_file)
 
 print("Files have been moved to the respective cluster folders.")
+
+feature_vectors = np.array(feature_vectors)  # 转换为NumPy数组
+feature_vectors = feature_vectors.reshape(feature_vectors.shape[0], -1)
 
 # 创建PCA对象，指定降维到的目标维度（通常为2或3）
 pca_2d = PCA(n_components=2)
