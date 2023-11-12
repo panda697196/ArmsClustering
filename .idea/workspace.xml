@@ -4,18 +4,7 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="a98c5f33-ad9f-44aa-939f-033a9a58e08a" name="Changes" comment="">
-      <change afterPath="$PROJECT_DIR$/.idea/modules.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/CUDsoftDTWtest1110.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/DBSCANcutMoveDTW.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/ArmsClustering.iml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/ArmsClustering.iml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/BVHcut.py" beforeDir="false" afterPath="$PROJECT_DIR$/BVHcut.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Bvhmove.py" beforeDir="false" afterPath="$PROJECT_DIR$/Bvhmove.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/CUDADTWTest.py" beforeDir="false" afterPath="$PROJECT_DIR$/CUDADTWTest1110.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/CUDAVAEtest.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/DBSCANcutMove.py" beforeDir="false" afterPath="$PROJECT_DIR$/DBSCANcutMove.py" afterDir="false" />
-    </list>
+    <list default="true" id="a98c5f33-ad9f-44aa-939f-033a9a58e08a" name="Changes" comment="" />
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -86,7 +75,7 @@
       <workItem from="1698666730732" duration="1355000" />
       <workItem from="1698676949674" duration="3031000" />
       <workItem from="1698708446993" duration="12232000" />
-      <workItem from="1699511755719" duration="15285000" />
+      <workItem from="1699511755719" duration="15888000" />
     </task>
     <servers />
   </component>

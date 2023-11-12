@@ -68,66 +68,36 @@ for file_name in file_names:
     feature_vectors.append(feature_vector)
 
 # 将 feature_vectors 转换为 PyTorch 张量
-data = torch.tensor(feature_vectors)
-
-# # 计算Soft DTW距离矩阵
-# soft_dtw = SoftDTW(use_cuda=True, gamma=1.0)  # 假设已经导入了正确的 Soft DTW 实现
-# soft_dtw_distances = []  # 用于存储 Soft DTW 距离矩阵
-#
-# for i in range(len(data)):
-#     for j in range(i+1, len(data)):
-#         # 计算 Soft DTW 距离
-#         distance = soft_dtw(data[i:i+1], data[j:j+1]).item()
-#         soft_dtw_distances.append(distance)
-#
-# # 将距离转换为对称矩阵形式
-# n = len(data)
-# distance_matrix = np.zeros((n, n))
-# indices = np.triu_indices(n, k=1)
-# distance_matrix[indices] = soft_dtw_distances
-# distance_matrix[(indices[1], indices[0])] = soft_dtw_distances
+data = torch.tensor(feature_vectors, dtype=torch.float32)
 
 if os.path.exists('soft_dtw_distances.npy') and os.path.exists('soft_dtw_distances_scaled.npy'):
-    dtw_distances = np.load('soft_dtw_distances.npy')
-    dtw_distances_scaled = np.load('soft_dtw_distances_scaled.npy')
+    soft_dtw_distances = np.load('soft_dtw_distances.npy')
+    soft_dtw_distances_scaled = np.load('soft_dtw_distances_scaled.npy')
 else:
-    # # 计算所有特征向量之间的DTW距离矩阵
-    # dtw_distances = np.zeros((len(feature_vectors), len(feature_vectors)))
-    # for i in tqdm(range(len(feature_vectors))):
-    #     for j in range(len(feature_vectors)):
-    #         dtw_distances[i, j], _ = fastdtw(feature_vectors[i], feature_vectors[j])
-    #
-    # # 使用StandardScaler对DTW距离矩阵进行标准化
-    # scaler = StandardScaler()
-    # dtw_distances_scaled = scaler.fit_transform(dtw_distances)
+    soft_dtw = SoftDTW(use_cuda=True, gamma=1.0)
 
-    # 计算Soft DTW距离矩阵
-    soft_dtw = SoftDTW(use_cuda=True, gamma=1.0)  # 假设已经导入了正确的 Soft DTW 实现
-    soft_dtw_distances = []  # 用于存储 Soft DTW 距离矩阵
+    # 计算 Soft DTW 距离矩阵
+    soft_dtw_distances = []
+    n = len(data)
 
-    for i in range(len(data)):
-        for j in range(i+1, len(data)):
+    for i in range(n):
+        distances_row = []
+        for j in range(n):
             # 计算 Soft DTW 距离
             distance = soft_dtw(data[i:i+1], data[j:j+1]).item()
-            soft_dtw_distances.append(distance)
+            distances_row.append(distance)
 
-    # 将距离转换为对称矩阵形式
-    n = len(data)
-    distance_matrix = np.zeros((n, n))
-    indices = np.triu_indices(n, k=1)
-    distance_matrix[indices] = soft_dtw_distances
-    distance_matrix[(indices[1], indices[0])] = soft_dtw_distances
+        soft_dtw_distances.append(distances_row)
+
+    soft_dtw_distances = np.array(soft_dtw_distances)
     scaler = StandardScaler()
     soft_dtw_distances_scaled = scaler.fit_transform(soft_dtw_distances)
 
-    # 将计算得到的DTW距离保存到文件中
     np.save('soft_dtw_distances.npy', soft_dtw_distances)
     np.save('soft_dtw_distances_scaled.npy', soft_dtw_distances_scaled)
 
-
-# 创建一个DBSCAN聚类器对象
-dbscan = DBSCAN(eps=10, min_samples=1)  # 可根据实际情况调整eps和min_samples参数
-# 对标准化后的DTW距离矩阵进行聚类，并获取聚类标签
+# 聚类
+dbscan = DBSCAN(eps=10, min_samples=1)
 cluster_label = dbscan.fit_predict(soft_dtw_distances_scaled)
 
 # 打印聚类标签
