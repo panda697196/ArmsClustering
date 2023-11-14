@@ -1,0 +1,26 @@
+import os
+import bpy
+
+# 指定文件夹路径
+folder_path = "D:\\Dev\\Emilya\\Netural_CUT_Parts\\clustered_files\\Cluster_14\\"
+
+# 指定移动的偏移量
+offset = (0, 60, 0)
+
+# 获取文件夹中的所有BVH文件
+bvh_files = [f for f in os.listdir(folder_path) if f.endswith('.bvh')]
+
+for index, bvh_file in enumerate(bvh_files):
+    # 构建绝对路径
+    bvh_file_path = os.path.join(folder_path, bvh_file)
+
+    # 导入 BVH 文件
+    bpy.ops.import_anim.bvh(filepath=bvh_file_path)
+
+    # 获取导入的对象
+    obj = bpy.context.object
+
+    # 将每个导入的对象移动到不同的位置
+    obj.location.x += offset[0] * index
+    obj.location.y += offset[1] * index
+    obj.location.z += offset[2] * index
