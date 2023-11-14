@@ -25,6 +25,8 @@ import torch
 from soft_dtw_cuda import SoftDTW
 
 
+
+
 # 定义读取bvh文件中手臂部分数据的函数
 def read_arm_data(filename):
     # 打开文件
@@ -51,7 +53,7 @@ def read_arm_data(filename):
         return arm_data
 
 # 定义文件夹路径
-folder_path = 'D:/Data/AllNarm_cut/'
+folder_path = 'D:/Data/Emilya/AllArm_Cut/'
 #Emillyacut CutParts MotionBVH_rotated_cut D:/Dev/Emilya/Netural_CUT_Parts
 
 # 获取文件夹中所有的bvh文件名
@@ -67,24 +69,34 @@ for file_name in file_names:
     # 将特征向量添加到列表中
     feature_vectors.append(feature_vector)
 
-# 将 feature_vectors 转换为 PyTorch 张量
-data = torch.tensor(feature_vectors, dtype=torch.float32)
+feature_vectors_array = np.array(feature_vectors, dtype=np.float32)
+data = torch.tensor(feature_vectors_array, dtype=torch.float32, device='cuda')
+
+# 创建 CUDA 张量作为 gamma 值
+gamma = torch.tensor([1.0], dtype=torch.float32, device='cuda')
+
+if hasattr(data, '__cuda_array_interface__'):
+    cuda_data = data
+else:
+    # Method 2: Using dlpack
+    dlpack = torch.utils.dlpack.to_dlpack(data)
+    cuda_data = torch.utils.dlpack.from_dlpack(dlpack)
 
 if os.path.exists('soft_dtw_distances.npy') and os.path.exists('soft_dtw_distances_scaled.npy'):
     soft_dtw_distances = np.load('soft_dtw_distances.npy')
     soft_dtw_distances_scaled = np.load('soft_dtw_distances_scaled.npy')
 else:
-    soft_dtw = SoftDTW(use_cuda=True, gamma=1.0)
+    soft_dtw = SoftDTW(use_cuda=True, gamma=gamma.item())
 
     # 计算 Soft DTW 距离矩阵
     soft_dtw_distances = []
-    n = len(data)
+    n = len(cuda_data)
 
-    for i in range(n):
+    for i in tqdm(range(n), desc='Calculating SoftDTW'):
         distances_row = []
         for j in range(n):
             # 计算 Soft DTW 距离
-            distance = soft_dtw(data[i:i+1], data[j:j+1]).item()
+            distance = soft_dtw(data[i:i + 1], data[j:j + 1]).item()
             distances_row.append(distance)
 
         soft_dtw_distances.append(distances_row)
@@ -97,7 +109,7 @@ else:
     np.save('soft_dtw_distances_scaled.npy', soft_dtw_distances_scaled)
 
 # 聚类
-dbscan = DBSCAN(eps=10, min_samples=1)
+dbscan = DBSCAN(eps=5, min_samples=1)
 cluster_label = dbscan.fit_predict(soft_dtw_distances_scaled)
 
 # 打印聚类标签
@@ -130,7 +142,7 @@ for cluster, files in cluster_files.items():
         print(file)
 
 # 创建目录并移动文件到相应的聚类文件夹
-output_folder = 'D:/Data/AllNarm_cut/clustered_files'
+output_folder = 'D:/Data/Emilya/AllArm_Cut/clustered_files'
 os.makedirs(output_folder, exist_ok=True)
 
 for cluster, files in cluster_files.items():
