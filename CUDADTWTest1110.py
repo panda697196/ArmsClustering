@@ -49,7 +49,7 @@ def read_arm_data(filename):
         return arm_data
 
 # 定义文件夹路径
-folder_path = 'D:/Data/TohokuBVH_Cut_Parts/'
+folder_path = 'D:/Data/AllNarm_cut/'
 #Emillyacut CutParts MotionBVH_rotated_cut D:/Dev/Emilya/Netural_CUT_Parts
 
 # 获取文件夹中所有的bvh文件名
@@ -65,9 +65,9 @@ for file_name in file_names:
     # 将特征向量添加到列表中
     feature_vectors.append(feature_vector)
 
-if os.path.exists('dtw_distances1.npy') and os.path.exists('dtw_distances_scaled1.npy'):
-    dtw_distances = np.load('dtw_distances1.npy')
-    dtw_distances_scaled = np.load('dtw_distances_scaled1.npy')
+if os.path.exists('dtw_distances.npy') and os.path.exists('dtw_distances_scaled.npy'):
+    dtw_distances = np.load('dtw_distances.npy')
+    dtw_distances_scaled = np.load('dtw_distances_scaled.npy')
 else:
     # 计算所有特征向量之间的DTW距离矩阵
     dtw_distances = np.zeros((len(feature_vectors), len(feature_vectors)))
@@ -80,8 +80,8 @@ else:
     dtw_distances_scaled = scaler.fit_transform(dtw_distances)
 
     # 将计算得到的DTW距离保存到文件中
-    np.save('dtw_distances1.npy', dtw_distances)
-    np.save('dtw_distances_scaled1.npy', dtw_distances_scaled)
+    np.save('dtw_distances.npy', dtw_distances)
+    np.save('dtw_distances_scaled.npy', dtw_distances_scaled)
 
 
 # 创建一个DBSCAN聚类器对象
@@ -119,7 +119,7 @@ for cluster, files in cluster_files.items():
         print(file)
 
 # 创建目录并移动文件到相应的聚类文件夹
-output_folder = 'D:/Data/TohokuBVH_Cut_Parts/clustered_files'
+output_folder = 'D:/Data/AllNarm_cut/clustered_files'
 os.makedirs(output_folder, exist_ok=True)
 
 for cluster, files in cluster_files.items():

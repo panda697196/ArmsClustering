@@ -53,7 +53,7 @@ def read_arm_data(filename):
         return arm_data
 
 # 定义文件夹路径
-folder_path = 'D:/Data/Emilya/AllArm_Cut/'
+folder_path = 'D:/Data/ALLNarm_cut/'
 #Emillyacut CutParts MotionBVH_rotated_cut D:/Dev/Emilya/Netural_CUT_Parts
 
 # 获取文件夹中所有的bvh文件名
@@ -82,9 +82,9 @@ else:
     dlpack = torch.utils.dlpack.to_dlpack(data)
     cuda_data = torch.utils.dlpack.from_dlpack(dlpack)
 
-if os.path.exists('soft_dtw_distances.npy') and os.path.exists('soft_dtw_distances_scaled.npy'):
-    soft_dtw_distances = np.load('soft_dtw_distances.npy')
-    soft_dtw_distances_scaled = np.load('soft_dtw_distances_scaled.npy')
+if os.path.exists('soft_dtw_distances1.npy') and os.path.exists('soft_dtw_distances_scaled1.npy'):
+    soft_dtw_distances = np.load('soft_dtw_distances1.npy')
+    soft_dtw_distances_scaled = np.load('soft_dtw_distances_scaled1.npy')
 else:
     soft_dtw = SoftDTW(use_cuda=True, gamma=gamma.item())
 
@@ -105,8 +105,8 @@ else:
     scaler = StandardScaler()
     soft_dtw_distances_scaled = scaler.fit_transform(soft_dtw_distances)
 
-    np.save('soft_dtw_distances.npy', soft_dtw_distances)
-    np.save('soft_dtw_distances_scaled.npy', soft_dtw_distances_scaled)
+    np.save('soft_dtw_distances1.npy', soft_dtw_distances)
+    np.save('soft_dtw_distances_scaled1.npy', soft_dtw_distances_scaled)
 
 # 聚类
 dbscan = DBSCAN(eps=5, min_samples=1)
@@ -142,7 +142,7 @@ for cluster, files in cluster_files.items():
         print(file)
 
 # 创建目录并移动文件到相应的聚类文件夹
-output_folder = 'D:/Data/Emilya/AllArm_Cut/clustered_files'
+output_folder = 'D:/Data/ALLNarm_cut/clustered_files'
 os.makedirs(output_folder, exist_ok=True)
 
 for cluster, files in cluster_files.items():
